@@ -41,14 +41,14 @@
         /* Стили списка карточек */
         .card-list {
             border: 1px solid var(--border); border-radius: 12px;
-            max-height: 250px; overflow-y: auto; padding: 10px; background: #fafafa;
+            max-height: 200px; overflow-y: auto; padding: 10px; background: #fafafa;
         }
         .card-item {
             display: flex; align-items: center; gap: 10px; background: #fff;
             padding: 8px 12px; border-radius: 8px; margin-bottom: 8px;
             border: 1px solid #eee; font-size: 13px;
         }
-        .card-item img { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
+        .card-item img { width: 40px; height: 40px; border-radius: 4px; object-fit: contain; background: #f4f7f6; }
         .card-item .remove { margin-left: auto; color: #ff4757; cursor: pointer; font-weight: bold; }
 
         /* Ввод */
@@ -58,11 +58,30 @@
         }
         .btn-small {
             padding: 8px 15px; background: var(--primary); color: #fff; border: none;
-            border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
+            border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;
         }
-        .input-actions { display: flex; gap: 5px; }
-        .btn-text { background: #333; }
+        .btn-small:hover { filter: brightness(1.1); }
         .btn-link { background: #20bf6b; }
+
+        /* Поиск картинок с ползунком */
+        .search-box { display: flex; gap: 8px; margin-top: 5px; }
+        .search-results {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px;
+            max-height: 200px; overflow-y: auto; padding: 8px; border: 1px solid var(--border);
+            border-radius: 8px; background: #fff;
+        }
+        /* Кастомный красивый ползунок */
+        .search-results::-webkit-scrollbar { width: 8px; }
+        .search-results::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .search-results::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .search-results::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        
+        .search-results img {
+            width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 6px; 
+            cursor: pointer; transition: 0.2s; background: #f4f7f6; border: 2px solid transparent;
+        }
+        .search-results img:hover { transform: scale(1.05); border-color: #ddd; }
+        .search-results img.selected { border-color: var(--primary); transform: scale(0.95); }
 
         input[type="color"] { width: 100%; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0;}
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
@@ -85,6 +104,7 @@
         }
         .preview-box iframe { width: 100%; height: 100%; border: none; }
 
+        /* Футер */
         footer {
             margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);
             text-align: center; font-size: 13px; color: #777; width: 100%; max-width: 1100px;
@@ -158,7 +178,6 @@
             max-width: 100%; max-height: 100%; 
             object-fit: contain; border-radius: 2cqmin; 
         }
-        /* Если есть и текст и фото, уменьшаем фото */
         .face.back.has-both img { max-height: 60%; }
         
         .face.back span {
@@ -209,10 +228,21 @@
                     <label style="font-size: 13px; font-weight: 600; color: #555;">Текст на карточке:</label>
                     <input type="text" id="textInput" placeholder="Например: Какое сегодня число?">
                     
-                    <label style="font-size: 13px; font-weight: 600; color: #555; margin-top: 5px;">Прямая ссылка на картинку (необязательно):</label>
-                    <input type="url" id="linkInput" placeholder="https://example.com/photo.jpg">
+                    <label style="font-size: 13px; font-weight: 600; color: #555; margin-top: 5px;">Прямая ссылка на картинку (из поиска ниже или своя):</label>
+                    <input type="url" id="linkInput" placeholder="https://example.com/photo.png">
                     
-                    <button class="btn-small btn-link" style="margin-top: 5px; padding: 10px;" onclick="addManualCard()">Добавить карточку в колоду</button>
+                    <button class="btn-small btn-link" style="margin-top: 5px; padding: 10px;" onclick="addManualCard()">+ Добавить карточку в колоду</button>
+                </div>
+
+                <!-- Поиск картинок Creazilla -->
+                <div style="margin-top:10px;">
+                    <label style="font-size: 13px; font-weight: 600; color: #555;">Поиск картинок (Creazilla):</label>
+                    <div class="search-box">
+                        <input type="text" id="creazillaSearch" placeholder="Например: apple, space, cat...">
+                        <button class="btn-small" onclick="searchCreazilla()">Найти</button>
+                    </div>
+                    <!-- Блок с прокруткой для миниатюр -->
+                    <div id="creazillaResults" class="search-results"></div>
                 </div>
 
                 <!-- Список добавленных -->
@@ -244,8 +274,9 @@
                 </div>
             </div>
         </div>
+        
         <footer>
-            <div>Автор: <b>Кóденцева Алёна</b>, блог <i>Просто для учителя | Easy for busy</i></div>
+            <div style="margin-bottom: 8px;">Автор: <b>Кóденцева Алёна</b>, блог <i>Просто для учителя | Easy for busy</i></div>
             <div class="social-links">
                 <a href="https://t.me/easyfrbusy" target="_blank" rel="noopener">
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.96 1.25-5.54 3.67-.52.36-.99.53-1.41.52-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.42-1.4-.88.03-.24.36-.49 1-.76 3.91-1.7 6.51-2.82 7.79-3.35 3.7-1.53 4.47-1.8 4.97-1.81.11 0 .35.03.5.15.12.1.16.23.17.33-.02.04-.02.13-.03.22z"/></svg>
@@ -280,34 +311,32 @@
 const urlParams = new URLSearchParams(window.location.search);
 const configParam = urlParams.get('config');
 
-let deckData = []; // [{text: '...', img: '...'}]
+let deckData = [];
 
-// --- ЗВУКИ ---
+// --- ЗВУКИ (Мягкие) ---
 let audioCtx = null;
 function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
 function playShuffleSound() {
     if(!audioCtx) return;
-    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*0.35, audioCtx.sampleRate);
+    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*0.4, audioCtx.sampleRate);
     const data = buf.getChannelData(0);
-    // Делаем шум тише и мягче изначально
-    for(let i=0; i<buf.length; i++) data[i] = (Math.random()*2-1) * 0.4; 
+    // Делаем шум тихим изначально
+    for(let i=0; i<buf.length; i++) data[i] = (Math.random()*2-1) * 0.3; 
     
     const src = audioCtx.createBufferSource(); 
     src.buffer = buf;
     
-    // Фильтр низких частот (убирает резкий шипящий звук, оставляя мягкий шорох бумаги)
+    // Фильтр низких частот (эффект плотной бумаги)
     const filter = audioCtx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 600;
+    filter.frequency.value = 500;
     
     const gain = audioCtx.createGain(); 
-    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.35);
     
-    src.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioCtx.destination); 
+    src.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); 
     src.start();
 }
 
@@ -316,16 +345,16 @@ function playFlipSound() {
     const osc = audioCtx.createOscillator(); 
     const gain = audioCtx.createGain();
     
-    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime+0.1);
+    // Мягкий звук "вжух"
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime+0.1);
     
-    gain.gain.setValueAtTime(0.3, audioCtx.currentTime); // Более тихий и аккуратный "свиш"
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.15);
     
-    osc.connect(gain); 
-    gain.connect(audioCtx.destination); 
-    osc.start(); 
-    osc.stop(audioCtx.currentTime+0.15);
+    osc.connect(gain); gain.connect(audioCtx.destination); 
+    osc.start(); osc.stop(audioCtx.currentTime+0.15);
 }
 
 // ==========================================
@@ -384,7 +413,7 @@ if (configParam) {
                 document.getElementById('deckArea').classList.remove('shuffling');
                 const card = remaining.pop();
                 
-                // Рендерим содержимое
+                // Рендерим содержимое (текст, картинка или всё вместе)
                 let contentHtml = '';
                 cardBack.className = 'face back';
                 if(card.img && card.text) cardBack.classList.add('has-both');
@@ -410,6 +439,7 @@ if (configParam) {
 else {
     document.getElementById('editor-container').style.display = 'flex';
     
+    // Ручное добавление карточки
     window.addManualCard = function() {
         const textVal = document.getElementById('textInput').value.trim();
         const linkVal = document.getElementById('linkInput').value.trim();
@@ -418,7 +448,56 @@ else {
         deckData.push({text: textVal, img: linkVal});
         document.getElementById('textInput').value = '';
         document.getElementById('linkInput').value = '';
+        
+        // Снимаем выделение с картинок
+        document.querySelectorAll('#creazillaResults img').forEach(el => el.classList.remove('selected'));
         renderList();
+    };
+
+    // Парсер для поиска на Creazilla (через обход CORS)
+    window.searchCreazilla = async function() {
+        const query = document.getElementById('creazillaSearch').value.trim();
+        if(!query) return;
+        
+        const resDiv = document.getElementById('creazillaResults');
+        resDiv.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #777; padding: 20px;">Ищем клипарты...</div>';
+        
+        try {
+            // Запрашиваем страницу поиска Creazilla через прокси AllOrigins
+            const searchUrl = `https://creazilla.com/search?q=${encodeURIComponent(query)}`;
+            const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`);
+            const data = await response.json();
+            const html = data.contents;
+
+            // Вытаскиваем все пути к картинкам из HTML через регулярное выражение
+            const imgRegex = /https:\/\/creazilla-store\.fra1\.digitaloceanspaces\.com\/(cliparts|vectors|silhouettes)\/[^"'\s>]+?\.(png|jpg|jpeg|svg|webp)/gi;
+            let matches = html.match(imgRegex) || [];
+
+            // Убираем дубликаты
+            matches = [...new Set(matches)];
+
+            resDiv.innerHTML = '';
+            if(matches.length === 0) {
+                resDiv.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #777; padding: 20px;">Ничего не найдено</div>';
+                return;
+            }
+
+            // Рендерим результаты с возможностью выбора (лимит 30 миниатюр)
+            matches.slice(0, 30).forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.title = "Нажмите, чтобы добавить в поле ссылки";
+                img.onclick = () => {
+                    document.getElementById('linkInput').value = src;
+                    // Подсветка выбора
+                    document.querySelectorAll('#creazillaResults img').forEach(el => el.classList.remove('selected'));
+                    img.classList.add('selected');
+                };
+                resDiv.appendChild(img);
+            });
+        } catch(e) { 
+            resDiv.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ff4757; padding: 20px;">Ошибка загрузки. Попробуйте еще раз.</div>';
+        }
     };
 
     function renderList() {
@@ -466,10 +545,10 @@ else {
         }, 2000);
     };
     
-    // Начальные данные (чтобы окно предпросмотра не было пустым)
+    // Начальные карточки по умолчанию
     deckData = [
-        {text: 'Привет! Это случайная карточка.', img: ''},
-        {text: 'Можно добавить только фото', img: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=400&q=80'}
+        {text: 'Как дела?', img: ''},
+        {text: '', img: 'https://creazilla-store.fra1.digitaloceanspaces.com/cliparts/1500609/apple-clipart-md.png'}
     ];
     renderList();
 }
